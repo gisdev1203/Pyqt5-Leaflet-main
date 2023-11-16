@@ -1,0 +1,149 @@
+<!-- FRANCESCO GERRATANA 2022 QT5 Gmaps embed Manipulation Exif GPS data -->
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Mappa</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+  <script src="js/qwebchannel.js"></script>
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+  <style>
+    body {
+      padding: 0;
+      margin: 0;
+    }
+
+    html,
+    body,
+    #map {
+      height: 100%;
+      width: 100%;
+    }
+
+    #map {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      padding: 0;
+      width: 100%;
+    }
+ #refreshButton {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  padding: 10px;
+  z-index: 400;
+}
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+  <button id="refreshButton" onclick="muovi()">Refresh Button</button>
+  <script>
+  
+
+    new QWebChannel(qt.webChannelTransport, function (channel) {
+        window.evento = channel.objects.evento;
+        window.jsObject = {
+            muovi: muovi
+          };
+          channel.objects.jsObject = window.jsObject;
+    });
+
+
+
+    var map = L.map('map', {
+      center: [41.89026,12.49237],
+      zoom: 17,
+      dragging: !L.Browser.mobile,
+      tap: !L.Browser.mobile
+    });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
+        '<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+        'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+      id: 'mapbox.streets'
+    }).addTo(map);
+	
+	coordinate = [41.8901462002504, 12.492324113845827]
+	
+	var inmarker = new L.marker(coordinate).addTo(map);
+	
+    var markers = [];
+
+    map.on('click', function (e) {
+	map.removeLayer(inmarker);
+      var geojsonFeature = {
+        "type": "Feature",
+        "properties": {},
+        "geometry": {
+          "type": "Point",
+          "coordinates": [e.latlng.lat, e.latlng.lng]
+        }
+      }
+      // remove previous marker
+      if (markers.length > 0) {
+        map.removeLayer(markers.pop());
+      }
+      var marker;
+
+      L.geoJson(geojsonFeature, {
+
+        pointToLayer: function (feature, latlng) {
+
+          marker = L.marker(e.latlng);
+          markers.push(marker)
+			
+          return marker;
+        }
+      }).addTo(map).bindPopup("<b>Position</b><br>"+e.latlng.lat+','+e.latlng.lng).openPopup();
+
+		evento.mapclick(e.latlng.lat,e.latlng.lng);
+		
+    });
+
+function muovi() {
+  var nuovaPosizione = L.latLng(41.8901462002504, 12.492324113845827);
+  var coordinates = [];//1
+  map.eachLayer(function(layer) {
+    if (layer instanceof L.Marker) {
+      // Trova il marker
+      var marker = layer;
+      // Recupera la posizione attuale del marker
+      var posizioneAttuale = marker.getLatLng();
+      // Rimuovi il marker esistente dalla variabile markers
+      // remove previous marker
+      if (markers.length > 0) {
+        map.removeLayer(markers.pop());
+      }
+      // Crea un nuovo marker con la nuova posizione
+      var newMarker = L.marker(nuovaPosizione).addTo(map);
+      // Aggiungi il popup al nuovo marker
+      newMarker.bindPopup("<b>Position</b><br>"+nuovaPosizione.lat+','+nuovaPosizione.lng).openPopup();
+      // Aggiorna la vista della mappa per mostrare il nuovo marker
+      map.panTo(nuovaPosizione);
+      // Aggiungi il nuovo marker alla variabile markers
+      markers.push(newMarker);
+      // Aggiungi le coordinate alla variabile coordinates
+      coordinates.push(newMarker._latlng);
+      // Esci dal ciclo eachLayer
+      return;
+    }
+  });
+  //evento.muovi();
+  //return JSON.stringify(coordinates);
+  //evento.pMuovi(JSON.stringify(coordinates));
+    if (coordinates.length > 0) {
+    evento.muovi(JSON.stringify(coordinates));
+  }
+}
+  </script>
+
+</body>
+
+</html>
